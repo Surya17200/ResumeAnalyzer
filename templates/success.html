@@ -13,5 +13,14 @@
     <a href="/">
         <button>Upload Another Resume</button>
     </a>
+    <h3>📄 Extracted Resume Information</h3>
+<ul>
+    <li><strong>Name:</strong> {{ parsed_data.name }}</li>
+    <li><strong>Email:</strong> {{ parsed_data.email }}</li>
+    <li><strong>Phone:</strong> {{ parsed_data.phone }}</li>
+    <li><strong>Skills:</strong> {{ parsed_data.skills | join(', ') }}</li>
+    <li><strong>Education:</strong> {{ parsed_data.education | join(', ') }}</li>
+</ul>
+
 </body>
 </html>

@@ -1,13 +1,15 @@
-from flask import Flask, render_template, request, redirect, send_from_directory
-import os
+from flask import Flask, render_template, request, send_from_directory
 from werkzeug.utils import secure_filename
+import os
 from parser.resume_parser import extract_resume_text
+from vercel_flask import Vercel
 
 app = Flask(__name__)
-UPLOAD_FOLDER = 'uploads'
-os.makedirs(UPLOAD_FOLDER, exist_ok=True)
+UPLOAD_FOLDER = '/tmp'  # Vercel's temp folder
 app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
 ALLOWED_EXTENSIONS = {'pdf', 'docx'}
+
+os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 
 def allowed_file(filename):
     return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
@@ -25,28 +27,15 @@ def upload():
         return 'No selected file'
     if file and allowed_file(file.filename):
         filename = secure_filename(file.filename)
-        file.save(os.path.join(app.config['UPLOAD_FOLDER'], filename))
-        return render_template('success.html', filename=filename)
-    else:
-        return 'Invalid file type.'
+        file_path = os.path.join(app.config['UPLOAD_FOLDER'], filename)
+        file.save(file_path)
+        text = extract_resume_text(file_path)
+        return render_template('success.html', filename=filename, extracted_text=text)
+    return 'Invalid file type.'
 
 @app.route('/view/<filename>')
 def view_pdf(filename):
     return send_from_directory(app.config['UPLOAD_FOLDER'], filename)
 
-# Vercel needs this handler
-def handler(event, context):
-    return app(event, context)
-# resume-analyzer/
-# │
-# ├── api/
-# │   └── index.py       # Flask app entry point for Vercel
-# ├── parser/
-# │   └── resume_parser.py
-# ├── templates/
-# │   ├── index.html
-# │   └── success.html
-# ├── uploads/
-# │   └── (empty initially)
-# ├── requirements.txt
-# └── vercel.json
+# Adapt for Vercel
+app = Vercel(app)

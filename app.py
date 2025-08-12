@@ -1,7 +1,7 @@
-from flask import Flask, render_template, request, send_from_directory
+from flask import Flask, render_template, request, redirect, send_from_directory
 import os
 from werkzeug.utils import secure_filename
-from parser.resume_parser import extract_resume_text, parse_resume, calculate_ats_score
+from parser.resume_parser import extract_resume_text
 
 app = Flask(__name__)
 UPLOAD_FOLDER = 'uploads'
@@ -31,35 +31,11 @@ def upload():
         filename = secure_filename(file.filename)
         filepath = os.path.join(app.config['UPLOAD_FOLDER'], filename)
         file.save(filepath)
-
-        # Extract & Parse
         resume_text = extract_resume_text(filepath)
-        parsed_data = parse_resume(resume_text)
-
-        # ATS Score
-        total_possible_skills = set(parsed_data["skills"])
-        ats_score = calculate_ats_score(
-            parsed_data["skills"],
-            total_possible_skills,
-            parsed_data["platforms"],
-            parsed_data["project_count"]
-        )
-
-        return render_template(
-            'success.html',
-            filename=filename,
-            branch=parsed_data["branch"],
-            skills=parsed_data["skills"],
-            platforms=parsed_data["platforms"],
-            project_count=parsed_data["project_count"],
-            ats_score=ats_score
-        )
+        return render_template('success.html', filename=filename, resume_text=resume_text)
     else:
-        return 'Invalid file type. Please upload a PDF or DOCX.'
+        return 'Invalid file type. Please upload PDF/DOCX.'
 
 @app.route('/view/<filename>')
 def view_pdf(filename):
     return send_from_directory(app.config['UPLOAD_FOLDER'], filename)
-
-if __name__ == '__main__':
-    app.run(debug=True)

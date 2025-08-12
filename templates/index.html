@@ -4,9 +4,9 @@
     <title>Resume Analyzer</title>
 </head>
 <body>
-    <h2>Upload Your Resume (PDF)</h2>
+    <h2>Upload Your Resume (PDF/DOCX)</h2>
     <form method="POST" action="/upload" enctype="multipart/form-data">
-        <input type="file" name="resume" accept=".pdf" required>
+        <input type="file" name="resume" accept=".pdf, .docx" required>
         <button type="submit">Upload Resume</button>
     </form>
 </body>

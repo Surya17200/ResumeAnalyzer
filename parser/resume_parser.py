@@ -17,7 +17,7 @@ def extract_text_from_docx(file_path):
     except Exception as e:
         return f"Error reading DOCX: {e}"
 
-# -------------------- Extract Raw Resume Text --------------------
+# -------------------- Generic Extractor --------------------
 def extract_resume_text(file_path):
     if file_path.endswith('.pdf'):
         return extract_text_from_pdf(file_path)
@@ -26,44 +26,78 @@ def extract_resume_text(file_path):
     else:
         return "Unsupported file format. Please upload a .pdf or .docx file."
 
-# -------------------- Extract Features from Resume --------------------
-def extract_resume_data(text):
-    data = {
-        "name": extract_name(text),
-        "email": extract_email(text),
-        "phone": extract_phone(text),
-        "skills": extract_skills(text),
-        "education": extract_education(text)
+# -------------------- Keywords --------------------
+GENERIC_KEYWORDS = [
+    "python", "java", "c++", "sql", "html", "css", "javascript", "excel", "power bi",
+    "machine learning", "deep learning", "data analysis", "data science"
+]
+
+BRANCH_KEYWORDS = {
+    "cse": ["dbms", "operating system", "computer networks", "software engineering", "ai", "ml"],
+    "ece": ["vlsi", "embedded systems", "signal processing", "microcontrollers"],
+    "mech": ["cad", "cam", "thermodynamics", "manufacturing"]
+}
+
+PLATFORM_LINKS = {
+    "github": r"github\.com/[A-Za-z0-9_-]+",
+    "leetcode": r"leetcode\.com/[A-Za-z0-9_-]+",
+    "hackerrank": r"hackerrank\.com/[A-Za-z0-9_-]+",
+    "codeforces": r"codeforces\.com/[A-Za-z0-9_-]+",
+    "kaggle": r"kaggle\.com/[A-Za-z0-9_-]+"
+}
+
+PROJECT_KEYWORDS = ["project", "developed", "built", "created", "designed", "implemented"]
+
+# -------------------- Detect Branch --------------------
+def detect_branch(text):
+    for branch, keywords in BRANCH_KEYWORDS.items():
+        if any(keyword.lower() in text for keyword in keywords):
+            return branch
+    return None
+
+# -------------------- Parse Resume --------------------
+def parse_resume(resume_text):
+    resume_lower = resume_text.lower()
+    branch = detect_branch(resume_lower)
+
+    skill_set = set(GENERIC_KEYWORDS)
+    if branch and branch in BRANCH_KEYWORDS:
+        skill_set.update(BRANCH_KEYWORDS[branch])
+    else:
+        for skills in BRANCH_KEYWORDS.values():
+            skill_set.update(skills)
+
+    found_skills = [skill for skill in skill_set if skill.lower() in resume_lower]
+
+    # Platforms
+    found_links = {}
+    for platform, pattern in PLATFORM_LINKS.items():
+        match = re.search(pattern, resume_text, re.IGNORECASE)
+        if match:
+            found_links[platform] = match.group()
+
+    # Projects count
+    project_count = sum(1 for word in PROJECT_KEYWORDS if word in resume_lower)
+
+    return {
+        "branch": branch if branch else "Not detected",
+        "skills": found_skills,
+        "platforms": found_links,
+        "project_count": project_count
     }
-    return data
 
-# -------------------- Helper Functions --------------------
+# -------------------- ATS Score --------------------
+def calculate_ats_score(found_skills, total_skills, platforms, project_count):
+    score = 0
 
-def extract_name(text):
-    # Simple heuristic: first line is often the name
-    lines = text.strip().split('\n')
-    if lines:
-        return lines[0].strip()
-    return "Name not found"
+    # Skills (70%)
+    if total_skills:
+        score += (len(found_skills) / len(total_skills)) * 70
 
-def extract_email(text):
-    match = re.search(r'\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,}\b', text)
-    return match.group() if match else "Email not found"
+    # Platforms (15%)
+    score += len(platforms) * 3  # each worth 3 points
 
-def extract_phone(text):
-    match = re.search(r'(\+91[-\s]?)?[6-9]\d{9}', text)
-    return match.group() if match else "Phone number not found"
+    # Projects (15%)
+    score += min(project_count * 5, 15)  # cap at 15%
 
-def extract_skills(text):
-    # Sample skills list
-    skill_keywords = [
-        "Python", "Java", "SQL", "C++", "Machine Learning", "NLP", "Data Science",
-"Flask", "Django", "TensorFlow", "Keras", "Pandas", "NumPy", "Git", "Linux"
-    ]
-    found_skills = [skill for skill in skill_keywords if re.search(rf'\b{re.escape(skill)}\b', text, re.IGNORECASE)]
-    return list(set(found_skills)) if found_skills else ["No skills found"]
-
-def extract_education(text):
-    education_keywords = ["B.Tech", "M.Tech", "B.E.", "M.E.", "B.Sc", "M.Sc", "Bachelor", "Master", "Ph.D", "High School"]
-    matches = [edu for edu in education_keywords if edu.lower() in text.lower()]
-    return list(set(matches)) if matches else ["Education details not found"]
+    return round(min(score, 100), 2)

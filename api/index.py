@@ -1,13 +1,12 @@
-from flask import Flask, render_template, request, send_from_directory
-from werkzeug.utils import secure_filename
+from flask import Flask, render_template, request, redirect, send_from_directory, url_for
 import os
-from parser.resume_parser import extract_resume_text
-from vercel_flask import Vercel
+from werkzeug.utils import secure_filename
+from parser.resume_parser import extract_resume_text  # adjust imports if needed
 
-app = Flask(__name__)
-UPLOAD_FOLDER = '/tmp'  # Vercel's temp folder
+app = Flask(__name__, template_folder="../templates")
+UPLOAD_FOLDER = '/tmp/uploads'
 app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
-ALLOWED_EXTENSIONS = {'pdf', 'docx'}
+ALLOWED_EXTENSIONS = {'pdf'}
 
 os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 
@@ -27,15 +26,13 @@ def upload():
         return 'No selected file'
     if file and allowed_file(file.filename):
         filename = secure_filename(file.filename)
-        file_path = os.path.join(app.config['UPLOAD_FOLDER'], filename)
-        file.save(file_path)
-        text = extract_resume_text(file_path)
-        return render_template('success.html', filename=filename, extracted_text=text)
-    return 'Invalid file type.'
+        file.save(os.path.join(app.config['UPLOAD_FOLDER'], filename))
+        return render_template('success.html', filename=filename)
+    else:
+        return 'Invalid file type. Please upload a PDF.'
 
 @app.route('/view/<filename>')
 def view_pdf(filename):
     return send_from_directory(app.config['UPLOAD_FOLDER'], filename)
 
-# Adapt for Vercel
-app = Vercel(app)
+# ❌ Don't use app.run() here — Vercel handles the server

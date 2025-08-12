@@ -1,6 +1,13 @@
-from app import app
-import vercel_wsgi
+from flask import Flask, render_template
 
-# Correct handler for Vercel
+app = Flask(__name__)
+
+@app.route('/')
+def home():
+    return render_template("index.html")
+
+# Vercel handler
+from vercel_wsgi import handle
+
 def handler(event, context):
-    return vercel_wsgi.handle(app, event, context)
+    return handle(app, event, context)

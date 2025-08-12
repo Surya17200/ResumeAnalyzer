@@ -1,6 +1,5 @@
 from app import app
-from vercel_wsgi import handler
+import vercel_wsgi
 
-# This is the function Vercel calls
-def handler(event, context):
-    return handler(app, event, context)
+# Expose the handler Vercel will call
+handler = lambda event, context: vercel_wsgi.handle(app, event, context)

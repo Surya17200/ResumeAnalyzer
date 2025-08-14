@@ -1,5 +1,4 @@
-flask
-Werkzeug
+Flask
+gunicorn
 pdfminer.six
 python-docx
-gunicorn

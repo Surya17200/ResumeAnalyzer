@@ -1,0 +1,34 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Resume Analysis Result</title>
+</head>
+<body>
+    <h2>✅ Resume Analysis Completed!</h2>
+    <p><strong>Branch Detected:</strong> {{ branch }}</p>
+    <p><strong>ATS Score:</strong> {{ ats_score }} / 100</p>
+
+    <h3>Extracted Skills:</h3>
+    <ul>
+        {% for skill in skills %}
+        <li>{{ skill }}</li>
+        {% endfor %}
+    </ul>
+
+    <h3>Online Profiles:</h3>
+    <ul>
+        {% for platform, link in platforms.items() %}
+        <li><strong>{{ platform.capitalize() }}:</strong> <a href="https://{{ link }}" target="_blank">{{ link }}</a></li>
+        {% endfor %}
+    </ul>
+
+    <h3>Projects Found:</h3>
+    <p>{{ project_count }}</p>
+
+    <a href="{{ url_for('view_pdf', filename=filename) }}" target="_blank">
+        <button>View Uploaded Resume</button>
+    </a>
+    <br><br>
+    <a href="/"><button>Upload Another Resume</button></a>
+</body>
+</html>
